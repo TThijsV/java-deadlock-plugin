@@ -1,18 +1,74 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.tthijsv.javadeadlockplugin</id>
-    <name>java-deadlock-plugin</name>
+    <id>com.maven.plugin.deadlock</id>
+    <name>Deadlock Finder</name>
     <vendor>tthijsv</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.tthijsv.javadeadlockplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow factoryClass="com.maven.plugin.deadlock.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.tthijsv.javadeadlockplugin.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.maven.plugin.deadlock.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
+    <!-- Actions -->
+    <actions>
+        <!-- The <group> element defines an action group.
+             <action>, <group> and <separator> elements defined within it are automatically included in the group.
+             - "id" (required) specifies an unique identifier for the action.
+             - "class" (optional) specifies the full-qualified name of the class implementing the group.
+               If not specified, com.intellij.openapi.actionSystem.DefaultActionGroup is used.
+             - "text" (optional) specifies the text of the group (text for the menu item showing the submenu).
+             - "description" (optional) specifies the text displayed in the status bar when the group is focused.
+             - "icon" (optional) specifies the icon which is displayed on the toolbar button or next to the group.
+             - "popup" (optional) specifies how the group is presented in the menu. If a group has popup="true",
+               actions in it are placed in a submenu; for popup="false", actions are displayed as a section of
+               the same menu delimited by separators. -->
+        <group id="DeadlocksActionGroup"
+               text="Deadlocks Finder"
+               description="Actions of the Find Deadlocks plugin"
+               icon="/icons/icon.svg"
+               popup="false">
+            <!-- The <action> element defines an action to register.
+                 - "id" (required) specifies an unique identifier for the action.
+                 - "class" (required) specifies the full-qualified name of the class implementing the action.
+                 - "text" (required) specifies the text (tooltip for toolbar button or text for menu item).
+                 - "use-shortcut-of" (optional) specifies the ID of the action whose keyboard shortcut this action uses.
+                 - "description" (optional) specifies the text displayed in the status bar when the action is focused.
+                 - "icon" (optional) specifies the icon displayed on the toolbar button or next to the menu item. -->
+            <action id="Deadlocks.FindMethodDeadlocksAction"
+                    class="com.maven.plugin.deadlock.actions.FindDeadlocksFromMethod"
+                    text="Find Deadlocks (Method)"
+                    description="Search for possible deadlocks when running this method"
+                    icon="/icons/search.png">
+            </action>
+            <action id="Deadlocks.FindClassDeadlocksAction"
+                    class="com.maven.plugin.deadlock.actions.FindDeadlocksFromClass"
+                    text="Find Deadlocks (Class)"
+                    description="Search for possible deadlocks when running methods from this class"
+                    icon="/icons/search.png">
+            </action>
+            <!-- The <add-to-group> node specifies that the action should be added to an existing group.
+                 An action can be added to several groups.
+                 - "group-id" (required) specifies the ID of the group to which the action is added. The group must be
+                   implemented by an instance of the DefaultActionGroup class.
+                 - "anchor" (required) specifies the position of the action in the group relative to other actions.
+                   It can have the values "first", "last", "before" and "after".
+                 - "relative-to-action" (required if the anchor is set to "before" and "after") specifies the action
+                   before or after which the current action is inserted. -->
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <!-- The <separator> element defines a separator between actions. -->
+            <!-- <separator/> -->
+            <!-- <group id="AnotherNestedGroup"/> -->
+            <!-- The <reference> element allows to add an existing action to the group.
+                 - "ref" (required) specifies the ID of the action to add. -->
+            <!-- <reference ref="EditorCopy"/> -->
+        </group>
+    </actions>
 </idea-plugin>

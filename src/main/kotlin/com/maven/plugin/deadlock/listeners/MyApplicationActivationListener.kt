@@ -1,4 +1,4 @@
-package com.github.tthijsv.javadeadlockplugin.listeners
+package com.maven.plugin.deadlock.listeners
 
 import com.intellij.openapi.application.ApplicationActivationListener
 import com.intellij.openapi.diagnostic.thisLogger
