@@ -24,7 +24,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
             localPrintln("${element.name} is Method, current lineage: ${lineage.size} | isFromSource $isFromSource")
             localPrintln(element.text)
-            isSynchronizedScope = resolveIsSynchronized()
+            isSynchronizedScope = resolveIsSynchronized(element)
             isWithinSynchronizedScope = isSynchronizedScope || isWithinSyncedScope()
 
             if (lineageContainsMethod(element)) {
@@ -138,8 +138,11 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         return result
     }
 
-    private fun resolveIsSynchronized(): Boolean {
-        if (currentElement is PsiMethod && currentElement.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
+    private fun resolveIsSynchronized(method: PsiMethod): Boolean {
+        if (method.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
+            return true
+        }
+        if (methodIsSynchronized(method)) {
             return true
         }
         return false;
@@ -174,5 +177,38 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             return "SYNCED"
         }
         return "UNKNOWN"
+    }
+
+    companion object {
+
+        private val SYNCHRONIZED_ANNOTATION = "Synchronized"
+        private val SYNCHRONIZED_ANNOTATION_FULL = "nl.donna.generiek.client.appmodel.concurrent.Synchronized"
+        private val NOT_SYNCHRONIZED_ANNOTATION = "NotSynchronized"
+        private val NOT_SYNCHRONIZED_ANNOTATION_FULL = "nl.donna.generiek.client.appmodel.concurrent.NotSynchronized"
+
+        fun classIsSynchronized(psiClass: PsiClass?): Boolean {
+            return psiClass != null && !psiClass.annotations.none { annotation ->
+                annotation.hasQualifiedName(SYNCHRONIZED_ANNOTATION) || annotation.hasQualifiedName(
+                    SYNCHRONIZED_ANNOTATION_FULL
+                )
+            }
+        }
+
+        fun methodIsSynchronized(psiMethod: PsiMethod): Boolean {
+            // Only consider methods in a synchronized annotated class
+            if (classIsSynchronized(psiMethod.containingClass)) {
+                // Exclude static and private methods
+                if (psiMethod.hasModifierProperty(PsiModifier.STATIC) || psiMethod.hasModifierProperty(PsiModifier.PRIVATE)) {
+                    return false
+                }
+                // Exclude methods with @NotSynchronized annotation
+                return psiMethod.annotations.none { annotation ->
+                    annotation.hasQualifiedName(NOT_SYNCHRONIZED_ANNOTATION) || annotation.hasQualifiedName(
+                        NOT_SYNCHRONIZED_ANNOTATION_FULL
+                    )
+                }
+            }
+            return false
+        }
     }
 }
