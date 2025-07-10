@@ -4,6 +4,7 @@ import com.intellij.psi.*
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.ClassInheritorsSearch
 import com.jetbrains.rd.util.AtomicInteger
+import java.io.File
 
 class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement) : PsiElementVisitor(), PsiRecursiveVisitor {
 
@@ -152,17 +153,31 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     }
 
     fun dropResult() {
+        val currentMethod = currentElement as PsiMethod
         localPrintln()
-        println("Getting result starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
+        val file = File("output_${currentMethod.containingClass!!.name}_${currentMethod.name}.txt")
+        writeToFile(file, "Results starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
+        println("Writing result to ${file.absolutePath}")
+        appendToFile(file, "")
         val header = "|COUNT|DL|SYNC|WS|EXT|LOOP|DEPTH|${"   SCOPE ".padEnd(200, ' ')}|"
-        println("".padEnd(header.length, '-'))
-        println(header)
-        println("|${"".padEnd(header.length-2, '-')}|")
-        writeResult(AtomicInteger())
-        println("".padEnd(header.length, '-'))
+        appendToFile(file, "".padEnd(header.length, '-'))
+        appendToFile(file, header)
+        appendToFile(file, "|${"".padEnd(header.length-2, '-')}|")
+        writeResult(file, AtomicInteger())
+        appendToFile(file, "".padEnd(header.length, '-'))
     }
 
-    fun writeResult(resultCounter: AtomicInteger) {
+    fun writeToFile(file: File, content: String) {
+        println(content)
+        file.writeText(content + '\n')
+    }
+
+    fun appendToFile(file: File, content: String) {
+        println(content)
+        file.appendText(content + '\n')
+    }
+
+    fun writeResult(file: File, resultCounter: AtomicInteger) {
         val resultCounterColumn =  getColumn(resultCounter.getAndAdd(1).toString(), 5)
         val deadlockColumn = getColumn( isDeadlockable, "DL", 2)
         val synchronizedColumn = getColumn( isSynchronizedScope, "SYNC" , 4)
@@ -172,8 +187,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         val depthColumn = getColumn(lineage.size.toString(), 5)
         val scopeColumn =  (" "+ pad() + getName()).padEnd(200, ' ')
         val resultLine = "|"+resultCounterColumn+"|"+deadlockColumn+"|"+synchronizedColumn+"|"+withinSynchronizedColumn+"|"+externalColumn+"|"+reoccuringColumn+"|"+depthColumn+"|"+scopeColumn+"|"
-        println(resultLine)
-        children.forEach { it.writeResult(resultCounter) }
+        appendToFile(file, resultLine)
+        children.forEach { it.writeResult(file, resultCounter) }
     }
 
     private fun getColumn(option: Boolean, output: String, width: Int) : String {
