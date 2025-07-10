@@ -28,7 +28,11 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             isFromSource = element.getNavigationElement().getContainingFile().getVirtualFile().isInLocalFileSystem()
 
             localPrintln("${element.name} is Method, current lineage: ${lineage.size} | isFromSource $isFromSource")
-            localPrintln(element.text)
+            if (element.text != null) {
+                localPrintln(element.text)
+            } else {
+                localPrintln("Somehow empty text for method element ${element.name}")
+            }
             isSynchronizedScope = resolveIsSynchronized(element)
             isWithinSynchronizedScope = isSynchronizedScope || isWithinSyncedScope()
 
@@ -55,7 +59,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             synchronizedCodeBlock.accept(newElementVisitor)
             return
         } else if (element is PsiMethodCallExpression) {
-            localPrintln("${element} is PsiMethodCallExpression")
+            localPrintln("${element} is PsiMethodCallExpression, ${lineage.last().getName()}")
             resolveMethod(element)
 //            return
         } else if (element is PsiNewExpression) {
@@ -84,24 +88,28 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     }
 
     private fun resolveNewExpression(newExpression: PsiNewExpression) {
-        val constructor = newExpression.resolveConstructor()
-        if (constructor != null) {
-            val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, constructor)
-            newElementVisitor.isConstructur = true
-            children.add(newElementVisitor)
-            constructor.accept(newElementVisitor)
-        } else {
-            val javaCodeReferenceElement: PsiJavaCodeReferenceElement =
-                newExpression.children.first { it is PsiJavaCodeReferenceElement } as PsiJavaCodeReferenceElement
-            var resolvedElement = javaCodeReferenceElement.resolve()
-            if (resolvedElement is PsiClass) {
-                resolvedElement.constructors.forEach {
-                    val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
-                    newElementVisitor.isConstructur = true
-                    children.add(newElementVisitor)
-                    it.accept(newElementVisitor)
+        try {
+            val constructor = newExpression.resolveConstructor()
+            if (constructor != null) {
+                val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, constructor)
+                newElementVisitor.isConstructur = true
+                children.add(newElementVisitor)
+                constructor.accept(newElementVisitor)
+            } else {
+                val javaCodeReferenceElement: PsiJavaCodeReferenceElement =
+                    newExpression.children.first { it is PsiJavaCodeReferenceElement } as PsiJavaCodeReferenceElement
+                var resolvedElement = javaCodeReferenceElement.resolve()
+                if (resolvedElement is PsiClass) {
+                    resolvedElement.constructors.forEach {
+                        val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
+                        newElementVisitor.isConstructur = true
+                        children.add(newElementVisitor)
+                        it.accept(newElementVisitor)
+                    }
                 }
             }
+        } catch (noSuchElementException: NoSuchElementException) {
+            localPrintln("Could not find element from $newExpression - $noSuchElementException")
         }
     }
 
@@ -113,7 +121,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
         if (resolvedMethod is PsiMethod) {
             // Resolve all possible methods from an interface including overloads if containing class is an interface
-            val methods = resolveInterface(resolvedMethod)
+//            val methods = resolveInterface(resolvedMethod)
+            val methods = mutableListOf<PsiMethod>()
             // Add the resolved method if we could not resolve interface methods
             if (methods.isEmpty()) {
                 methods.add(resolvedMethod)

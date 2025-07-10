@@ -34,16 +34,19 @@ class FindDeadlocksFromClass: PluginAction() {
                     deadlockedVisitors.add(visitor)
                 }
             }
+            println("Combining results for ${psiElement.methods.size} visitors")
             if (outputDir != null) {
                 val outputDir = File(outputDir)
                 val outputFile = File("${outputDir}/combined_results.txt")
                 // Create or overwrite the output file
                 outputFile.printWriter().use { writer ->
                     outputDir.listFiles()?.forEach { file ->
-                        if (file.isFile) {
+                        if (file.isFile && !file.name.contains("combined_results")) {
+                            println("Writing file ${file.name}")
                             file.forEachLine { line ->
                                 writer.println(line)
                             }
+                            println("Wrote file ${file.name}")
                         }
                     }
                 }
