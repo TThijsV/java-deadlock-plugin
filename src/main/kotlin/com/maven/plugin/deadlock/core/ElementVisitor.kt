@@ -60,7 +60,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         } else if (element is PsiNewExpression) {
             localPrintln("${element} is PsiNewExpression")
             resolveNewExpression(element)
-            return
+//            return
         }
         element.children.forEach { it.accept(this) }
     }
@@ -154,7 +154,13 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     fun dropResult() {
         val currentMethod = currentElement as PsiMethod
         localPrintln()
-        val file = File("output_${currentMethod.containingClass!!.name}_${currentMethod.name}_${System.currentTimeMillis()}.txt")
+
+        val dir = File("output/")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+
+        val file = File("output/output_${currentMethod.containingClass!!.name}_${currentMethod.name}_${System.currentTimeMillis()}.txt")
         writeToFile(file, "Results starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
         println("Writing result to ${file.absolutePath}")
         appendToFile(file, "")
