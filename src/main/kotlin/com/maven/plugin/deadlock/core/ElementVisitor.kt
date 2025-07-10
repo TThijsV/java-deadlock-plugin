@@ -5,6 +5,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.ClassInheritorsSearch
 import com.jetbrains.rd.util.AtomicInteger
 import java.io.File
+import java.lang.System.currentTimeMillis
 
 class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement) : PsiElementVisitor(), PsiRecursiveVisitor {
 
@@ -83,14 +84,23 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     }
 
     private fun resolveNewExpression(newExpression: PsiNewExpression) {
-        val javaCodeReferenceElement: PsiJavaCodeReferenceElement = newExpression.children.first { it is PsiJavaCodeReferenceElement } as PsiJavaCodeReferenceElement
-        var resolvedElement = javaCodeReferenceElement.resolve()
-        if (resolvedElement is PsiClass) {
-            resolvedElement.constructors.forEach {
-                val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
-                newElementVisitor.isConstructur = true
-                children.add(newElementVisitor)
-                it.accept(newElementVisitor)
+        val constructor = newExpression.resolveConstructor()
+        if (constructor != null) {
+            val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, constructor)
+            newElementVisitor.isConstructur = true
+            children.add(newElementVisitor)
+            constructor.accept(newElementVisitor)
+        } else {
+            val javaCodeReferenceElement: PsiJavaCodeReferenceElement =
+                newExpression.children.first { it is PsiJavaCodeReferenceElement } as PsiJavaCodeReferenceElement
+            var resolvedElement = javaCodeReferenceElement.resolve()
+            if (resolvedElement is PsiClass) {
+                resolvedElement.constructors.forEach {
+                    val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
+                    newElementVisitor.isConstructur = true
+                    children.add(newElementVisitor)
+                    it.accept(newElementVisitor)
+                }
             }
         }
     }
@@ -151,16 +161,41 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         println("${lineage.size}: $text")
     }
 
-    fun dropResult() {
+
+    fun dropResult() : String {
         val currentMethod = currentElement as PsiMethod
-        localPrintln()
 
         val dir = File("output/")
         if (!dir.exists()) {
             dir.mkdirs()
         }
+        val currentTime = currentTimeMillis()
+        val outputDir = "output/${currentMethod.containingClass!!.name}_$currentTime/"
+        val dir2 = File(outputDir)
+        if (!dir2.exists()) {
+            dir2.mkdirs()
+        }
+        dropResult(outputDir, false)
 
-        val file = File("output/output_${currentMethod.containingClass!!.name}_${currentMethod.name}_${System.currentTimeMillis()}.txt")
+        if (isDeadlockable) {
+            dropResult(outputDir, true)
+        }
+
+        return outputDir
+    }
+
+    fun dropResult(outputDir: String) {
+        dropResult(outputDir, false)
+        if (isDeadlockable) {
+            dropResult(outputDir, true)
+        }
+    }
+
+    fun dropResult(outputDir: String, writeOnlyDeadlocklines: Boolean) : String {
+        val currentMethod = currentElement as PsiMethod
+        localPrintln()
+
+        val file = File("$outputDir${currentMethod.containingClass!!.name}_${currentMethod.name}_${currentTimeMillis()}${if (writeOnlyDeadlocklines) "_DEADLOCK" else "" }.txt")
         writeToFile(file, "Results starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
         println("Writing result to ${file.absolutePath}")
         appendToFile(file, "")
@@ -168,8 +203,9 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         appendToFile(file, "".padEnd(header.length, '-'))
         appendToFile(file, header)
         appendToFile(file, "|${"".padEnd(header.length-2, '-')}|")
-        writeResult(file, AtomicInteger())
+        writeResult(file, AtomicInteger(), writeOnlyDeadlocklines)
         appendToFile(file, "".padEnd(header.length, '-'))
+        return outputDir
     }
 
     fun writeToFile(file: File, content: String) {
@@ -182,18 +218,21 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         file.appendText(content + '\n')
     }
 
-    fun writeResult(file: File, resultCounter: AtomicInteger) {
+    fun writeResult(file: File, resultCounter: AtomicInteger, writeOnlyDeadlocklines: Boolean) {
         val resultCounterColumn =  getColumn(resultCounter.getAndAdd(1).toString(), 5)
-        val deadlockColumn = getColumn( isDeadlockable, "DL", 2)
-        val synchronizedColumn = getColumn( isSynchronizedScope, "SYNC" , 4)
-        val withinSynchronizedColumn = getColumn( isWithinSynchronizedScope, "WS", 2)
-        val externalColumn = getColumn(!isFromSource, "EXT", 3)
-        val reoccuringColumn = getColumn(isReoccurring, "LOOP", 4)
-        val depthColumn = getColumn(lineage.size.toString(), 5)
-        val scopeColumn =  (" "+ pad() + getName()).padEnd(200, ' ')
-        val resultLine = "|"+resultCounterColumn+"|"+deadlockColumn+"|"+synchronizedColumn+"|"+withinSynchronizedColumn+"|"+externalColumn+"|"+reoccuringColumn+"|"+depthColumn+"|"+scopeColumn+"|"
-        appendToFile(file, resultLine)
-        children.forEach { it.writeResult(file, resultCounter) }
+        if (!writeOnlyDeadlocklines || isDeadlockable) {
+            val deadlockColumn = getColumn(isDeadlockable, "DL", 2)
+            val synchronizedColumn = getColumn(isSynchronizedScope, "SYNC", 4)
+            val withinSynchronizedColumn = getColumn(isWithinSynchronizedScope, "WS", 2)
+            val externalColumn = getColumn(!isFromSource, "EXT", 3)
+            val reoccuringColumn = getColumn(isReoccurring, "LOOP", 4)
+            val depthColumn = getColumn(lineage.size.toString(), 5)
+            val scopeColumn = (" " + pad() + getName()).padEnd(200, ' ')
+            val resultLine =
+                "|" + resultCounterColumn + "|" + deadlockColumn + "|" + synchronizedColumn + "|" + withinSynchronizedColumn + "|" + externalColumn + "|" + reoccuringColumn + "|" + depthColumn + "|" + scopeColumn + "|"
+            appendToFile(file, resultLine)
+        }
+        children.forEach { it.writeResult(file, resultCounter, writeOnlyDeadlocklines) }
     }
 
     private fun getColumn(option: Boolean, output: String, width: Int) : String {

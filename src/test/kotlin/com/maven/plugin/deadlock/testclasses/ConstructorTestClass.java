@@ -3,7 +3,7 @@ package com.maven.plugin.deadlock.testclasses;
 public class ConstructorTestClass {
 
     public ConstructorTestClass() {
-
+        methodC();
     }
 
     public ConstructorTestClass(int arg) {
@@ -21,6 +21,10 @@ public class ConstructorTestClass {
 
     public static ConstructorTestClass getInstanceWithArgument() {
         return new ConstructorTestClass(42);
+    }
+
+    public static ConstructorTestClass getInstanceWithArguments() {
+        return new ConstructorTestClass(42, "42");
     }
 
     public void methodA() {
