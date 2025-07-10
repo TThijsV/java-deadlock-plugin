@@ -13,13 +13,10 @@ class FindDeadlocksFromMethod: PluginAction() {
 
 
     fun runFindDeadlocks(anActionEvent: AnActionEvent) {
-        System.out.println("runFindDeadlocks FindDeadlocksFromMethod on $anActionEvent")
-
         val psiElement = anActionEvent.getData(CommonDataKeys.PSI_ELEMENT)
-        System.out.println("runFindDeadlocks, start from $psiElement, which is a method")
 
         if (psiElement is PsiMethod) {
-//            val visitor = PsiElementVisitorImpl(null, 0, psiElement, false, ScopeType.METHOD, mutableSetOf())
+            println("runFindDeadlocks, start from $psiElement, which is a method")
             val visitor = ElementVisitor(arrayListOf(), psiElement)
             psiElement.accept(visitor)
             visitor.dropResult()
