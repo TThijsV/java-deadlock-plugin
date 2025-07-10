@@ -3,6 +3,7 @@ package com.maven.plugin.deadlock.core
 import com.intellij.psi.*
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.ClassInheritorsSearch
+import com.jetbrains.rd.util.AtomicInteger
 
 class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement) : PsiElementVisitor(), PsiRecursiveVisitor {
 
@@ -17,6 +18,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     var isDeadlockable: Boolean = false
 
     var isFromSource: Boolean = true
+
+    var isConstructur: Boolean = false
 
     override fun visitElement(element: PsiElement) {
         if (element is PsiMethod) {
@@ -39,14 +42,6 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             }
 
             lineage.add(this)
-            localPrintln("${element.name}, new current lineage: ${lineage.size}")
-
-            element.children.forEach { elm -> {
-                localPrintln("Element: $elm")
-                localPrintln("${elm.text}")
-            } }
-
-
         } else if (element is PsiSynchronizedStatement) {
             localPrintln("${element} is PsiSynchronizedStatement")
             val synchronizedCodeBlock: PsiCodeBlock = element.children.first { it is PsiCodeBlock } as PsiCodeBlock
@@ -92,6 +87,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         if (resolvedElement is PsiClass) {
             resolvedElement.constructors.forEach {
                 val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
+                newElementVisitor.isConstructur = true
                 children.add(newElementVisitor)
                 it.accept(newElementVisitor)
             }
@@ -157,13 +153,35 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
     fun dropResult() {
         localPrintln()
-        localPrintln("Getting result starting from method $currentElement, contains deadlock risks = $isDeadlockable")
-        writeResult()
+        println("Getting result starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
+        val header = "|COUNT|DL|SYNC|WS|EXT|LOOP|DEPTH|${"   SCOPE ".padEnd(200, ' ')}|"
+        println("".padEnd(header.length, '-'))
+        println(header)
+        println("|${"".padEnd(header.length-2, '-')}|")
+        writeResult(AtomicInteger())
+        println("".padEnd(header.length, '-'))
     }
 
-    fun writeResult() {
-        localPrintln("${pad()}${getName()}, synced = $isSynchronizedScope, within synced scope = $isWithinSynchronizedScope, internal = $isFromSource")
-        children.forEach { it.writeResult() }
+    fun writeResult(resultCounter: AtomicInteger) {
+        val resultCounterColumn =  getColumn(resultCounter.getAndAdd(1).toString(), 5)
+        val deadlockColumn = getColumn( isDeadlockable, "DL", 2)
+        val synchronizedColumn = getColumn( isSynchronizedScope, "SYNC" , 4)
+        val withinSynchronizedColumn = getColumn( isWithinSynchronizedScope, "WS", 2)
+        val externalColumn = getColumn(!isFromSource, "EXT", 3)
+        val reoccuringColumn = getColumn(isReoccurring, "LOOP", 4)
+        val depthColumn = getColumn(lineage.size.toString(), 5)
+        val scopeColumn =  (" "+ pad() + getName()).padEnd(200, ' ')
+        val resultLine = "|"+resultCounterColumn+"|"+deadlockColumn+"|"+synchronizedColumn+"|"+withinSynchronizedColumn+"|"+externalColumn+"|"+reoccuringColumn+"|"+depthColumn+"|"+scopeColumn+"|"
+        println(resultLine)
+        children.forEach { it.writeResult(resultCounter) }
+    }
+
+    private fun getColumn(option: Boolean, output: String, width: Int) : String {
+        return if (option) getColumn(output, width) else getColumn("", width)
+    }
+
+    private fun getColumn(text: String, width: Int) : String {
+        return text.padStart(width, ' ')
     }
 
     fun pad(): String {
@@ -172,9 +190,13 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
     private fun getName(): String {
         if (currentElement is PsiMethod) {
-            return currentElement.name
+            if (isConstructur) {
+                return "new ${currentElement.name}()"
+            } else {
+                return "${currentElement.containingClass?.name}#${currentElement.name}"
+            }
         } else if (currentElement is PsiCodeBlock) {
-            return "SYNCED"
+            return "SYNC_BLOCK#" + this.lineage.last { it.currentElement is PsiMethod }.getName()
         }
         return "UNKNOWN"
     }
