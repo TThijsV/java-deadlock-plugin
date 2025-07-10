@@ -111,7 +111,6 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             for (method in methods) {
                 val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, method)
                 children.add(newElementVisitor)
-//                newElementVisitor.lineage.add(newElementVisitor)
                 method.accept(newElementVisitor)
             }
         }
