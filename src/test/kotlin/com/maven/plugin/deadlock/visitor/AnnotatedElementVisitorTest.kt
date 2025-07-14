@@ -20,9 +20,9 @@ class AnnotatedElementVisitorTest : BasePluginTestCase() {
 
     fun testMethodsInSynchronizedAnnotatedClass() {
         val publicMethodVisitor = runVisitorMethod(fileName, publicMethod)
-        validateSynchronizedMethodVisitor(publicMethodVisitor, publicMethod, 1, 0)
+        validateSynchronizedMethodVisitor(publicMethodVisitor, publicMethod, 1, 0, "MUTEX")
         val protectedMethodVisitor = runVisitorMethod(fileName, protectedMethod)
-        validateSynchronizedMethodVisitor(protectedMethodVisitor, protectedMethod, 1, 0)
+        validateSynchronizedMethodVisitor(protectedMethodVisitor, protectedMethod, 1, 0, "MUTEX")
         val privateMethodVisitor = runVisitorMethod(fileName, privateMethod)
         validateNonSynchronizedMethodVisitor(privateMethodVisitor, privateMethod, 1, 0)
     }

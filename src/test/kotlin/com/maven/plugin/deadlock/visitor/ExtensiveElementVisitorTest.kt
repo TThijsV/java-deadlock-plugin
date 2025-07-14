@@ -9,29 +9,31 @@ class ExtensiveElementVisitorTest : BasePluginTestCase() {
     val methodB1 = "methodB1"
     val methodB2 = "methodB2"
     val methodB3 = "methodB3"
+    val methodB4 = "methodB4"
     val methodC1 = "methodC1"
     val methodC2 = "methodC2"
     val methodC3 = "methodC3"
+    val methodC4 = "methodC4"
     val methodD1 = "methodD1"
     val methodD2 = "methodD2"
     val methodD3 = "methodD3"
+    val methodD4 = "methodD4"
 
     fun testExtensiveClassVisitor() {
         val elementVisitor = runVisitorMethod(fileName, methodA)
-        validateMethodVisitor(elementVisitor, methodA, 1, 3, false, false, false, true)
+        validateMethodVisitor(elementVisitor, methodA, 1, 4, false, false, false, true)
 
-        // First branch from method A, no looping branch
+        // First branch from method A, multiple synchronizations on same object, no looping branch
         val methodB1Visitor = elementVisitor.children.get(0)
         validateNonSynchronizedMethodVisitor(methodB1Visitor, methodB1, 2, 1)
         val methodC1Visitor = methodB1Visitor.children.first()
-        validateSynchronizedMethodVisitor(methodC1Visitor, methodC1, 3, 2)
+        validateSynchronizedMethodVisitor(methodC1Visitor, methodC1, 3, 2, "ExtensiveTestClass INSTANCE")
         val methodD1Visitor = methodC1Visitor.children.first()
         validateMethodVisitor(methodD1Visitor, methodD1, 4, 0, false, false, true, false)
         val synchronizedScopeVisitor = methodC1Visitor.children.last()
-        validateSynchronizedScopeVisitor(synchronizedScopeVisitor, 4, 1)
+        validateSynchronizedScopeVisitor(synchronizedScopeVisitor, 4, 1, "ExtensiveTestClass INSTANCE")
         val secondMethodD1Visitor = synchronizedScopeVisitor.children.first()
         validateMethodVisitor(secondMethodD1Visitor, methodD1, 5, 0, false, false, true, false)
-
 
         // Second branch from method A, looping, deadlock
         val methodB2Visitor = elementVisitor.children.get(1)
@@ -52,6 +54,24 @@ class ExtensiveElementVisitorTest : BasePluginTestCase() {
         validateNonSynchronizedMethodVisitor(methodD3Visitor, methodD3, 4, 1)
         val secondMethodB3Visitor = methodD3Visitor.children.first()
         validateMethodVisitor(secondMethodB3Visitor, methodB3, 5, 0, true, false, false, false)
+
+        // Fourth branch from method A, no looping, multiple locks, deadlock risk
+        val methodB4Visitor = elementVisitor.children.get(3)
+        validateNonSynchronizedMethodVisitor(methodB4Visitor, methodB4, 2, 1)
+        val methodC4Visitor = methodB4Visitor.children.first()
+        validateSynchronizedMethodVisitor(methodC4Visitor, methodC4, 3, 2, "ExtensiveTestClass INSTANCE")
+        val methodD4Visitor = methodC4Visitor.children.first()
+        validateMethodVisitor(methodD4Visitor, methodD4, 4, 0, false, false, true, false)
+        val synchronizedScopeVisitor4 = methodC4Visitor.children.last()
+        validateSynchronizedScopeVisitor(synchronizedScopeVisitor4, 4, 1, "ExtensiveTestClass#someObject")
+        val secondMethodD4Visitor = synchronizedScopeVisitor4.children.first()
+        validateMethodVisitor(secondMethodD4Visitor, methodD4, 5, 0, false, false, true, false)
+        assertTrue(elementVisitor.containsDeadlockRisk)
+        assertTrue(methodB4Visitor.containsDeadlockRisk)
+        assertTrue(methodC4Visitor.containsDeadlockRisk)
+        assertTrue(synchronizedScopeVisitor4.containsDeadlockRisk)
+        assertFalse(methodD4Visitor.containsDeadlockRisk)
+        assertFalse(secondMethodD4Visitor.containsDeadlockRisk)
 
         elementVisitor.dropResult()
     }

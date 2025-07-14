@@ -3,11 +3,12 @@ package com.maven.plugin.deadlock.core
 import com.intellij.psi.*
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.ClassInheritorsSearch
+import com.intellij.psi.util.elementType
 import com.jetbrains.rd.util.AtomicInteger
 import java.io.File
 import java.lang.System.currentTimeMillis
 
-class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement) : PsiElementVisitor(), PsiRecursiveVisitor {
+class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement, val lockStack: ArrayList<String>) : PsiElementVisitor(), PsiRecursiveVisitor {
 
     val children = ArrayList<ElementVisitor>()
 
@@ -19,9 +20,13 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
     var isDeadlockable: Boolean = false
 
+    var containsDeadlockRisk: Boolean = false
+
     var isFromSource: Boolean = true
 
     var isConstructur: Boolean = false
+
+    var lock: String? = null
 
     override fun visitElement(element: PsiElement) {
         if (element is PsiMethod) {
@@ -35,6 +40,13 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             }
             isSynchronizedScope = resolveIsSynchronized(element)
             isWithinSynchronizedScope = isSynchronizedScope || isWithinSyncedScope()
+            if (isSynchronizedScope ) {
+                containsDeadlockRisk = checkDeadlockRisk()
+                if (containsDeadlockRisk) {
+                    lineage.forEach { it.containsDeadlockRisk = true }
+                }
+                lockStack.add(lock!!)
+            }
 
             if (lineageContainsMethod(element)) {
                 localPrintln("${element.name} is already found in the lineage with size ${lineage.size}, stop visiting")
@@ -51,10 +63,19 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         } else if (element is PsiSynchronizedStatement) {
             localPrintln("${element} is PsiSynchronizedStatement")
             val synchronizedCodeBlock: PsiCodeBlock = element.children.first { it is PsiCodeBlock } as PsiCodeBlock
-            val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, synchronizedCodeBlock)
+            val newElementVisitor = ElementVisitor(
+                lineage.clone() as ArrayList<ElementVisitor>,
+                synchronizedCodeBlock,
+                lockStack.clone() as ArrayList<String>)
+            newElementVisitor.lock = resolveSynchronizedStatementLock(element)
+            newElementVisitor.containsDeadlockRisk = newElementVisitor.checkDeadlockRisk()
+            newElementVisitor.lockStack.add(newElementVisitor.lock!!)
             newElementVisitor.lineage.add(newElementVisitor)
             newElementVisitor.isSynchronizedScope = true
             newElementVisitor.isWithinSynchronizedScope = true
+            if (newElementVisitor.containsDeadlockRisk) {
+                newElementVisitor.lineage.forEach { it.containsDeadlockRisk = true }
+            }
             children.add(newElementVisitor)
             synchronizedCodeBlock.accept(newElementVisitor)
             return
@@ -68,6 +89,28 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 //            return
         }
         element.children.forEach { it.accept(this) }
+    }
+
+    private fun checkDeadlockRisk(): Boolean {
+        if (lock == null) {
+            return false
+        }
+        // TODO, deze check uitbreiden?
+        return lockStack.any{ it != lock }
+    }
+
+    private fun resolveSynchronizedStatementLock(element: PsiSynchronizedStatement) : String {
+        var lockObject = element.children.first { it is PsiJavaToken && it.tokenType.toString() == "LPARENTH" }.nextSibling
+        localPrintln("Next: $lockObject")
+
+        val className = (lineage.last { it.currentElement is PsiMethod }.currentElement as PsiMethod).containingClass!!.name
+        if (lockObject is PsiThisExpression) {
+            return "${className} INSTANCE"
+        } else if (lockObject is PsiReferenceExpression) {
+            return "${className}#${lockObject.text}"
+        }
+
+        return "SOMEOBJECT INSTANCE"
     }
 
     private fun isWithinSyncedScope(): Boolean {
@@ -91,17 +134,24 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         try {
             val constructor = newExpression.resolveConstructor()
             if (constructor != null) {
-                val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, constructor)
+                // Add resolved constructor as scope
+                val newElementVisitor = ElementVisitor(
+                    lineage.clone() as ArrayList<ElementVisitor>,
+                    constructor,
+                    lockStack.clone() as ArrayList<String>)
                 newElementVisitor.isConstructur = true
                 children.add(newElementVisitor)
                 constructor.accept(newElementVisitor)
             } else {
+                // Add all found constructors as a possible scope
                 val javaCodeReferenceElement: PsiJavaCodeReferenceElement =
                     newExpression.children.first { it is PsiJavaCodeReferenceElement } as PsiJavaCodeReferenceElement
                 var resolvedElement = javaCodeReferenceElement.resolve()
                 if (resolvedElement is PsiClass) {
                     resolvedElement.constructors.forEach {
-                        val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, it)
+                        val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>,
+                            it,
+                            lockStack.clone() as ArrayList<String>)
                         newElementVisitor.isConstructur = true
                         children.add(newElementVisitor)
                         it.accept(newElementVisitor)
@@ -121,14 +171,16 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
         if (resolvedMethod is PsiMethod) {
             // Resolve all possible methods from an interface including overloads if containing class is an interface
-//            val methods = resolveInterface(resolvedMethod)
+//            val methods = resolveInterface(resolvedMethod) // TODO
             val methods = mutableListOf<PsiMethod>()
             // Add the resolved method if we could not resolve interface methods
             if (methods.isEmpty()) {
                 methods.add(resolvedMethod)
             }
             for (method in methods) {
-                val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>, method)
+                val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>,
+                    method,
+                    lockStack)
                 children.add(newElementVisitor)
                 method.accept(newElementVisitor)
             }
@@ -154,13 +206,21 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     }
 
     private fun resolveIsSynchronized(method: PsiMethod): Boolean {
+        var result = false
         if (method.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
-            return true
+            result = true
+            lock = if (method.hasModifierProperty(PsiModifier.STATIC)) "${method.containingClass!!.name}.class" else "${method.containingClass!!.name} INSTANCE"
         }
         if (methodIsSynchronized(method)) {
-            return true
+            if (result) {
+                lock = "MUTEX+${lock}"
+                localPrintln("Double synchronized for $method")
+            } else {
+                lock = "MUTEX"
+            }
+            result = true
         }
-        return false;
+        return result;
     }
 
     private fun localPrintln() {
@@ -195,7 +255,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
 
     fun dropResult(outputDir: String) {
         dropResult(outputDir, false)
-        if (isDeadlockable) {
+        if (isDeadlockable || containsDeadlockRisk) {
             dropResult(outputDir, true)
         }
     }
@@ -205,10 +265,10 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         localPrintln()
 
         val file = File("$outputDir${currentMethod.containingClass!!.name}_${currentMethod.name}_${currentTimeMillis()}${if (writeOnlyDeadlocklines) "_DEADLOCK" else "" }.txt")
-        writeToFile(file, "Results starting from method $currentElement, contains found deadlock risks = $isDeadlockable")
+        writeToFile(file, "Results starting from method $currentElement, contains very likely deadlocks = $isDeadlockable, contains deadlock risks = $containsDeadlockRisk")
         println("Writing result to ${file.absolutePath}")
         appendToFile(file, "")
-        val header = "|COUNT|DL|SYNC|WS|EXT|LOOP|DEPTH|${"   SCOPE ".padEnd(200, ' ')}|"
+        val header = "|COUNT|DL|DLR|SYNC|WS|EXT|LOOP|DEPTH|${"LOCK".padEnd(50, ' ')}|${"   SCOPE ".padEnd(100, ' ')}|"
         appendToFile(file, "".padEnd(header.length, '-'))
         appendToFile(file, header)
         appendToFile(file, "|${"".padEnd(header.length-2, '-')}|")
@@ -231,14 +291,16 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         val resultCounterColumn =  getColumn(resultCounter.getAndAdd(1).toString(), 5)
         if (!writeOnlyDeadlocklines || isDeadlockable) {
             val deadlockColumn = getColumn(isDeadlockable, "DL", 2)
+            val deadlockRiskColumn = getColumn(containsDeadlockRisk, "DLR", 3)
             val synchronizedColumn = getColumn(isSynchronizedScope, "SYNC", 4)
             val withinSynchronizedColumn = getColumn(isWithinSynchronizedScope, "WS", 2)
             val externalColumn = getColumn(!isFromSource, "EXT", 3)
             val reoccuringColumn = getColumn(isReoccurring, "LOOP", 4)
             val depthColumn = getColumn(lineage.size.toString(), 5)
-            val scopeColumn = (" " + pad() + getName()).padEnd(200, ' ')
+            val lockColumn = (if (lock == null) "" else lock!!).padEnd(50, ' ')
+            val scopeColumn = (" " + pad() + getName()).padEnd(100, ' ')
             val resultLine =
-                "|" + resultCounterColumn + "|" + deadlockColumn + "|" + synchronizedColumn + "|" + withinSynchronizedColumn + "|" + externalColumn + "|" + reoccuringColumn + "|" + depthColumn + "|" + scopeColumn + "|"
+                "|$resultCounterColumn|$deadlockColumn|$deadlockRiskColumn|$synchronizedColumn|$withinSynchronizedColumn|$externalColumn|$reoccuringColumn|$depthColumn|$lockColumn|$scopeColumn|"
             appendToFile(file, resultLine)
         }
         children.forEach { it.writeResult(file, resultCounter, writeOnlyDeadlocklines) }

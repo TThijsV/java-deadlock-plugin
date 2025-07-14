@@ -2,10 +2,13 @@ package com.maven.plugin.deadlock.testclasses;
 
 public class ExtensiveTestClass {
 
+    Object someObject = new Object();
+
     public void methodA() {
         methodB1();
         methodB2();
         methodB3();
+        methodB4();
     }
 
     public void methodB1() {
@@ -20,6 +23,10 @@ public class ExtensiveTestClass {
     }
 
     public void methodD1() {
+
+    }
+
+    public void methodD4() {
 
     }
 
@@ -45,6 +52,18 @@ public class ExtensiveTestClass {
 
     public void methodD3() {
         methodB3();
+    }
+
+    public void methodB4() {
+        methodC4();
+    }
+
+
+    public synchronized void methodC4() {
+        methodD4();
+        synchronized (someObject) {
+            methodD4();
+        }
     }
 
 }

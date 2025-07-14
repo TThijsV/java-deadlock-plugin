@@ -32,11 +32,10 @@ class LoopingSynchronizedVisitorTest : BasePluginTestCase() {
         val synchronizedScopedMethodEVisitor = notSynchronizedMethodDVisitor.children.first()
         validateMethodVisitor(synchronizedScopedMethodEVisitor, synchronizedScopedMethodE, 2, 1, false, false, false, true)
         val synchronizedScopeVisitor = synchronizedScopedMethodEVisitor.children.first()
-        validateSynchronizedScopeVisitor(synchronizedScopeVisitor, 3, 1, true)
+        validateSynchronizedScopeVisitor(synchronizedScopeVisitor, 3, 1, true, "LoopingSynchronizedMethodsClass INSTANCE")
         val notSynchronizedMethodFVisitor = synchronizedScopeVisitor.children.first()
         validateMethodVisitor(notSynchronizedMethodFVisitor, notSynchronizedMethodF, 4, 1, false, false, true, true)
         val secondNotSynchronizedMethodDVisitor = notSynchronizedMethodFVisitor.children.first()
         validateMethodVisitor(secondNotSynchronizedMethodDVisitor, notSynchronizedMethodD, 5, 0, true, false, true, true)
     }
-
 }

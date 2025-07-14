@@ -17,7 +17,7 @@ class FindDeadlocksFromMethod: PluginAction() {
 
         if (psiElement is PsiMethod) {
             println("runFindDeadlocks, start from $psiElement, which is a method")
-            val visitor = ElementVisitor(arrayListOf(), psiElement)
+            val visitor = ElementVisitor(arrayListOf(), psiElement, arrayListOf())
             psiElement.accept(visitor)
             visitor.dropResult()
         }
