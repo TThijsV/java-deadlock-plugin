@@ -2,6 +2,9 @@ package com.maven.plugin.deadlock.visitor
 
 import com.maven.plugin.deadlock.BasePluginTestCase
 
+/**
+ * Specific test to see if the @Synchronized and @NotSynchronized annotations are handeld correctly
+ */
 class AnnotatedElementVisitorTest : BasePluginTestCase() {
 
     val fileName = "SynchronizedAnnotatedClass.java"

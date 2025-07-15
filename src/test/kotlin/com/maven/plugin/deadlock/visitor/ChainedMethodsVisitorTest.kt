@@ -2,6 +2,9 @@ package com.maven.plugin.deadlock.visitor
 
 import com.maven.plugin.deadlock.BasePluginTestCase
 
+/**
+ * Test to see if chained calls are handled correctly
+ */
 class ChainedMethodsVisitorTest : BasePluginTestCase() {
 
     val fileName = "ChainedMethodsClass.java"

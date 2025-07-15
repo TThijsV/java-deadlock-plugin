@@ -2,6 +2,9 @@ package com.maven.plugin.deadlock.visitor
 
 import com.maven.plugin.deadlock.BasePluginTestCase
 
+/**
+ * Test to determine correct behavior on loops without synchronized scopes
+ */
 class LoopingVisitorTest : BasePluginTestCase() {
 
     val fileName = "LoopingClass.java"
@@ -17,7 +20,7 @@ class LoopingVisitorTest : BasePluginTestCase() {
         val method3Visitor = method2Visitor.children.first()
         validateNonSynchronizedMethodVisitor(method3Visitor, method3, 3, 1)
         val secondMethod1Visitor = method3Visitor.children.first()
-        validateMethodVisitor(secondMethod1Visitor, method1, 4, 0, true, false, false, false)
+        validateMethodVisitor(secondMethod1Visitor, method1, 4, 0, true, false, false)
         method1Visitor.dropResult()
     }
 

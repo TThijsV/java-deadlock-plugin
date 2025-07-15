@@ -12,13 +12,11 @@ class FindDeadlocksFromClass: PluginAction() {
         runFindDeadlocks(anActionEvent)
     }
 
-
     fun runFindDeadlocks(anActionEvent: AnActionEvent) {
         val psiElement = anActionEvent.getData(CommonDataKeys.PSI_ELEMENT)
 
         if (psiElement is PsiClass) {
             println("runFindDeadlocks, start from $psiElement, which is a class")
-            val deadlockedVisitors = mutableListOf<ElementVisitor>()
             val deadlockRiskVisitors = mutableListOf<ElementVisitor>()
             var outputDir: String? = null
             psiElement.methods.forEach {
@@ -31,10 +29,7 @@ class FindDeadlocksFromClass: PluginAction() {
                     visitor.dropResult(outputDir)
                 }
 
-                if (visitor.isDeadlockable) {
-                    deadlockedVisitors.add(visitor)
-                }
-                if (visitor.containsDeadlockRisk) {
+                if (visitor.deadlockRisk > 0) {
                     deadlockRiskVisitors.add(visitor)
                 }
             }
@@ -56,11 +51,9 @@ class FindDeadlocksFromClass: PluginAction() {
                 }
             }
 
-            println("${psiElement.methods.size - deadlockedVisitors.size} methods without deadlock risks, " +
-                    "${deadlockedVisitors.size} with a likely deadlock, " +
+            println("${psiElement.methods.size - deadlockRiskVisitors.size} methods without deadlock risks, " +
                     "${deadlockRiskVisitors.size} with deadlock risks")
-            deadlockedVisitors.forEach { println("${it.getName()} contains a likely deadlock")}
-            deadlockRiskVisitors.forEach { println("${it.getName()} contains a likely deadlock")}
+            deadlockRiskVisitors.forEach { println("${it.getName()} contains a deadlock risk of level ${it.deadLockRiskToLevel()}")}
         }
     }
 

@@ -1,11 +1,8 @@
 package com.maven.plugin.deadlock.testclasses;
 
-import java.util.ArrayList;
-import java.util.List;
-
 class SynchronizedMethodsClass {
 
-    List<Integer> someList = new ArrayList<>();
+    Object lock = new Object();
 
     public void nonSynchronizedMethod() {
 
@@ -26,7 +23,7 @@ class SynchronizedMethodsClass {
     }
 
     public void synchronizedScopeOnObjectMethod() {
-        synchronized (someList) {
+        synchronized (lock) {
 
         }
     }

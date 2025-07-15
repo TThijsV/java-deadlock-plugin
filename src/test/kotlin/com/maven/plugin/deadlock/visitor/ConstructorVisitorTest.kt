@@ -2,6 +2,9 @@ package com.maven.plugin.deadlock.visitor
 
 import com.maven.plugin.deadlock.BasePluginTestCase
 
+/**
+ * Test to see if constructors are handled correctly as new scopes
+ */
 class ConstructorVisitorTest : BasePluginTestCase() {
 
     val fileName = "ConstructorTestClass.java"

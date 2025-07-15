@@ -12,7 +12,6 @@ import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.maven.plugin.deadlock.core.ElementVisitor
-import org.junit.Assert.assertNotEquals
 
 @TestDataPath("\$CONTENT_ROOT/src/test/kotlin")
 abstract class BasePluginTestCase : BasePlatformTestCase() {
@@ -67,42 +66,58 @@ abstract class BasePluginTestCase : BasePlatformTestCase() {
     }
 
     protected fun validateSynchronizedMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, lock: String) {
-        validateSynchronizedMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, lock)
+        validateSynchronizedMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, 0, lock)
     }
 
-    protected fun validateSynchronizedMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, isDeadlockable: Boolean, lock: String) {
-        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, true, true, isDeadlockable)
-        assertEquals(lock, methodVisitor.lock)
+    protected fun validateSynchronizedMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, deadlockRisk: Int, lock: String) {
+        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, true, true, deadlockRisk, lock)
     }
 
     protected fun validateNonSynchronizedMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int) {
-        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, false, false, false)
-        assertNull(methodVisitor.lock)
+        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, false, false, 0)
     }
 
-    protected fun validateMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, isReoccurring: Boolean, isSynchronized: Boolean, isWithinSynchronizedScope: Boolean, isDeadlockable: Boolean) {
+    protected fun validateNonSynchronizedMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, deadlockRisk: Int) {
+        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, false, false, false, deadlockRisk)
+    }
+
+    protected fun validateMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, isReoccurring: Boolean, isSynchronized: Boolean, isWithinSynchronizedScope: Boolean) {
+        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, isReoccurring, isSynchronized, isWithinSynchronizedScope, 0)
+    }
+
+    protected fun validateMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, isReoccurring: Boolean, isSynchronized: Boolean, isWithinSynchronizedScope: Boolean, deadlockRisk: Int) {
+        validateMethodVisitor(methodVisitor, expectedMethodName, expectedLineageSize, expectedChildrenSize, isReoccurring, isSynchronized, isWithinSynchronizedScope, deadlockRisk, null)
+    }
+
+    protected fun validateMethodVisitor(methodVisitor: ElementVisitor, expectedMethodName: String, expectedLineageSize: Int, expectedChildrenSize: Int, isReoccurring: Boolean, isSynchronized: Boolean, isWithinSynchronizedScope: Boolean, deadlockRisk: Int, lock: String?) {
         assertTrue(methodVisitor.currentElement is PsiMethod)
         assertEquals((methodVisitor.currentElement as PsiMethod).name, expectedMethodName)
         assertSize(expectedLineageSize, methodVisitor.lineage)
         assertSize(expectedChildrenSize, methodVisitor.children)
         assertEquals(isReoccurring, methodVisitor.isReoccurring)
-        assertEquals(isSynchronized, methodVisitor.isSynchronizedScope)
+        assertEquals(isSynchronized, methodVisitor.isSynchronized())
         assertEquals(isWithinSynchronizedScope, methodVisitor.isWithinSynchronizedScope)
-        assertEquals(isDeadlockable, methodVisitor.isDeadlockable)
+        assertEquals(deadlockRisk, methodVisitor.deadlockRisk)
+        if (lock == null) {
+            assertNull(methodVisitor.lock)
+        } else {
+            assertEquals(lock, methodVisitor.lock.toString())
+        }
+
     }
 
     protected fun validateSynchronizedScopeVisitor(visitor: ElementVisitor, expectedLineageSize: Int, expectedChildrenSize: Int, lock: String) {
-        validateSynchronizedScopeVisitor(visitor, expectedLineageSize, expectedChildrenSize, false, lock)
+        validateSynchronizedScopeVisitor(visitor, expectedLineageSize, expectedChildrenSize, 0, lock)
     }
 
-    protected fun validateSynchronizedScopeVisitor(visitor: ElementVisitor, expectedLineageSize: Int, expectedChildrenSize: Int, isDeadlockable: Boolean, lock: String) {
+    protected fun validateSynchronizedScopeVisitor(visitor: ElementVisitor, expectedLineageSize: Int, expectedChildrenSize: Int, deadlockRisk: Int, lock: String) {
         assertTrue(visitor.currentElement is PsiCodeBlock)
         assertSize(expectedLineageSize, visitor.lineage)
         assertSize(expectedChildrenSize, visitor.children)
-        assertTrue(visitor.isSynchronizedScope)
+        assertTrue(visitor.isSynchronized())
         assertTrue(visitor.isWithinSynchronizedScope)
-        assertEquals(isDeadlockable, visitor.isDeadlockable)
-        assertEquals(lock, visitor.lock)
+        assertEquals(deadlockRisk, visitor.deadlockRisk)
+        assertEquals(lock, visitor.lock.toString())
     }
 
 

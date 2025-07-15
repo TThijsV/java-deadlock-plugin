@@ -2,6 +2,9 @@ package com.maven.plugin.deadlock.visitor
 
 import com.maven.plugin.deadlock.BasePluginTestCase
 
+/**
+ * Tests to see if method scopes calling each other are handled correctly
+ */
 class SimpleElementVisitorTest : BasePluginTestCase() {
 
     val fileName = "SimpleClass.java"

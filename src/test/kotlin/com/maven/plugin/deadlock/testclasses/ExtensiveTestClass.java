@@ -9,8 +9,11 @@ public class ExtensiveTestClass {
         methodB2();
         methodB3();
         methodB4();
+        methodB5();
+        methodB6();
     }
 
+    // First branch
     public void methodB1() {
         methodC1();
     }
@@ -26,10 +29,7 @@ public class ExtensiveTestClass {
 
     }
 
-    public void methodD4() {
-
-    }
-
+    // Second branch
     public void methodB2() {
         methodC2();
     }
@@ -42,6 +42,7 @@ public class ExtensiveTestClass {
         methodB2();
     }
 
+    // Third branch
     public void methodB3() {
         methodC3();
     }
@@ -54,10 +55,10 @@ public class ExtensiveTestClass {
         methodB3();
     }
 
+    // Fourth branch
     public void methodB4() {
         methodC4();
     }
-
 
     public synchronized void methodC4() {
         methodD4();
@@ -65,5 +66,38 @@ public class ExtensiveTestClass {
             methodD4();
         }
     }
+
+    public void methodD4() {
+
+    }
+
+    // Fifth branch
+    public synchronized void methodB5() {
+        methodC5();
+    }
+
+    public void methodC5() {
+        synchronized (someObject) {
+            methodD5();
+        }
+    }
+
+    public synchronized void methodD5() {
+
+    }
+
+    // Sixth branch
+    public void methodB6() {
+        methodC6();
+    }
+
+    public synchronized void methodC6() {
+        ExtensiveTestClass.methodD6();
+    }
+
+    public static synchronized void methodD6() {
+        new ExtensiveTestClass().methodB6();
+    }
+
 
 }
