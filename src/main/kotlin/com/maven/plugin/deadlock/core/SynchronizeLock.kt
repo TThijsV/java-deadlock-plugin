@@ -30,7 +30,6 @@ class SynchronizeLock {
         } else if (lockTypes.contains(LockType.CLASS_INSTANCE) && element != null) {
             return "${(element as PsiClass).name}.class"
         } else if (lockTypes.contains(LockType.OBJECT_INSTANCE) && element != null) {
-            println("element = $element | ${element.elementType}")
             if (element is PsiClass) {
                 return "${(element as PsiClass).name} INSTANCE"
             } else if (element is PsiVariable) {

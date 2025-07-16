@@ -18,7 +18,7 @@ abstract class BasePluginTestCase : BasePlatformTestCase() {
 
     protected fun runVisitorMethod(fileName: String, methodName: String): ElementVisitor {
         val method: PsiMethod = getMethodFromJavaFile(fileName, methodName)!!
-        val elementVisitor = ElementVisitor(arrayListOf(), method, arrayListOf())
+        val elementVisitor = ElementVisitor(arrayListOf(), method, arrayListOf(), arrayListOf())
         method.accept(elementVisitor)
         return elementVisitor
     }

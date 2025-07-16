@@ -66,7 +66,14 @@ Uitleg van de kolommen:
 
 Bovenstaand resultaat geeft dus de calltree aan vanuit de methode `deleteBuitendienststelling` in de `DipElementModelManager` class. 
 Het hoogst geconstateerde risico is MID. Dat is in dit geval geconstateerd omdat er 2 verschillende synchronizatie locks in een code pad zitten. 
-Namelijk de Mutex en een gesynchronizeerde methode. Het is aan de gebruiker om te beoordelen of dit daadwerkelijk een issue kan zijn.
+Namelijk de Mutex en een gesynchronizeerde methode in een instance van het PlanversieModel, en nogmaals op de Mutex en een statische methode in de ChangeEventManager. 
+Het is aan de gebruiker om te beoordelen of dit daadwerkelijk een issue kan zijn. Deze risico's worden in een los overzicht herhaald:
+
+````
+Found risks
+MID:  Multiple locks on objects [MUTEX, nl.donna.pti.client.appmodel.models.internal.PlanversieModel INSTANCE] in 'SYNC_BLOCK#PlanversieModelManager#findPlanversie'
+MID:  Multiple locks on objects [MUTEX, ChangeEventManager.class] in 'ChangeEventManager#getInstance'
+````
 
 ### Plugin toepassen
 #### Vanuit java-deadlock-plugin repo

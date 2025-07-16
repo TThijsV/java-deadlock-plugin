@@ -21,7 +21,7 @@ class FindDeadlocksFromClass: PluginAction() {
             var outputDir: String? = null
             psiElement.methods.forEach {
                 println("runFindDeadlocks, start from ${it.name}, which is a method")
-                val visitor = ElementVisitor(arrayListOf(), it, arrayListOf())
+                val visitor = ElementVisitor(arrayListOf(), it, arrayListOf(), arrayListOf())
                 it.accept(visitor)
                 if (outputDir == null) {
                     outputDir = visitor.dropResult()

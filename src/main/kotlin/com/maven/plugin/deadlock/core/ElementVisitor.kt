@@ -8,7 +8,7 @@ import java.io.File
 import java.lang.System.currentTimeMillis
 
 
-class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement, val lockStack: ArrayList<SynchronizeLock>) : PsiElementVisitor(), PsiRecursiveVisitor {
+class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement: PsiElement, val lockStack: ArrayList<SynchronizeLock>, val riskDescriptions: ArrayList<String>) : PsiElementVisitor(), PsiRecursiveVisitor {
 
     val children = ArrayList<ElementVisitor>()
 
@@ -23,6 +23,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
     var isConstructur: Boolean = false
 
     var lock: SynchronizeLock? = null
+
+
 
     override fun visitElement(element: PsiElement) {
         if (element is PsiMethod) {
@@ -55,7 +57,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             val newElementVisitor = ElementVisitor(
                 lineage.clone() as ArrayList<ElementVisitor>,
                 synchronizedCodeBlock,
-                lockStack.clone() as ArrayList<SynchronizeLock>)
+                lockStack.clone() as ArrayList<SynchronizeLock>,
+                riskDescriptions)
             newElementVisitor.lock = resolveSynchronizedStatementLock(element)
             newElementVisitor.lockStack.add(newElementVisitor.lock!!)
             newElementVisitor.lineage.add(newElementVisitor)
@@ -96,18 +99,23 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         // LOW risk if multiple locks on same object instance
         if (uniqueLocks.size == 1 && uniqueLocks.first().endsWith(" INSTANCE") && lockStack.size > 1) {
             risk = 1
+            riskDescriptions.add("LOW:  Multiple locks on object [${uniqueLocks.first()}] in '${getName()}'")
         }
         // MID risk when multiple different locks are used, and no loop is found
         if (uniqueLocks.size > 1 && !isReoccurring) {
             risk = 2
+            riskDescriptions.add("MID:  Multiple locks on objects [${uniqueLocks.joinToString(", ")}] in '${getName()}'")
         }
         // HIGH risk when multiple different locks are used, and a loop is found
         if (uniqueLocks.size > 1 && isReoccurring) {
             risk = 3
+            riskDescriptions.add("HIGH: Multiple locks on objects [${uniqueLocks.joinToString(", ")}] in '${getName()}' with a loop")
         }
         // HIGH risk when a deadlockable situation is found: For example MUTEX -> SomeObject INSTANCE -> MUTEX
-        if (checkDeadlockable()) {
+        val riskDescription = checkDeadlockable()
+        if (riskDescription != null) {
             risk = 3
+            riskDescriptions.add(riskDescription)
         }
         // Set risk in lineage
         lineage.forEach { it.deadlockRisk = Math.max(risk, it.deadlockRisk) }
@@ -117,20 +125,27 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
      * Checks for a deadlockable situations. That is identified when multiple locks are alternating each other
      * For example MUTEX -> SomeObject INSTANCE -> MUTEX
      */
-    private fun checkDeadlockable() : Boolean {
+    private fun checkDeadlockable() : String? {
+        var riskDescription = ""
         val uniqueLocks = lockStack.map { it.toString() }.toSet()
         for (uniqueLock in uniqueLocks) {
             var foundLock = false
             var foundOtherLockAfter = false
             for (lock in lockStack) {
                 if (foundLock && foundOtherLockAfter && lock.toString() == uniqueLock) {
-                    return true
+                    riskDescription += ", $uniqueLock"
+                    return "HIGH: Alternating locks on [$riskDescription] in '${getName()}'"
                 }
-                foundLock = foundLock || lock.toString() == uniqueLock
-                foundOtherLockAfter = foundOtherLockAfter || (foundLock && lock.toString() != uniqueLock)
+                if (!foundLock && lock.toString() == uniqueLock) {
+                    foundLock = true
+                    riskDescription = uniqueLock
+                } else if (!foundOtherLockAfter && foundLock && lock.toString() != uniqueLock) {
+                    foundOtherLockAfter = true
+                    riskDescription += ", $lock"
+                }
             }
         }
-        return false
+        return null
     }
 
     /**
@@ -172,7 +187,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
                 val newElementVisitor = ElementVisitor(
                     lineage.clone() as ArrayList<ElementVisitor>,
                     constructor,
-                    lockStack.clone() as ArrayList<SynchronizeLock>)
+                    lockStack.clone() as ArrayList<SynchronizeLock>,
+                    riskDescriptions)
                 newElementVisitor.isConstructur = true
                 children.add(newElementVisitor)
                 constructor.accept(newElementVisitor)
@@ -185,7 +201,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
                     resolvedElement.constructors.forEach {
                         val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>,
                             it,
-                            lockStack.clone() as ArrayList<SynchronizeLock>)
+                            lockStack.clone() as ArrayList<SynchronizeLock>,
+                            riskDescriptions)
                         newElementVisitor.isConstructur = true
                         children.add(newElementVisitor)
                         it.accept(newElementVisitor)
@@ -214,7 +231,8 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
             for (method in methods) {
                 val newElementVisitor = ElementVisitor(lineage.clone() as ArrayList<ElementVisitor>,
                     method,
-                    lockStack.clone() as ArrayList<SynchronizeLock>)
+                    lockStack.clone() as ArrayList<SynchronizeLock>,
+                    riskDescriptions)
                 children.add(newElementVisitor)
                 method.accept(newElementVisitor)
             }
@@ -316,6 +334,12 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         appendToFile(file, "|${"".padEnd(header.length-2, '-')}|")
         writeResult(file, AtomicInteger(), writeOnlyDeadlocklines)
         appendToFile(file, "".padEnd(header.length, '-'))
+
+        if (riskDescriptions.isNotEmpty()) {
+            appendToFile(file, "")
+            appendToFile(file, "Found risks")
+            riskDescriptions.forEach { appendToFile(file, it) }
+        }
         return outputDir
     }
 
