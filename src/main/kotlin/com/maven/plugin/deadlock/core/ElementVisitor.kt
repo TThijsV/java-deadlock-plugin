@@ -253,7 +253,7 @@ class ElementVisitor(val lineage: ArrayList<ElementVisitor>, val currentElement:
         }
         if (isMethodSynchronizedByAnnotation(method)) {
             if (lock != null) {
-                lock!!.lockType.add(SynchronizeLock.LockType.MUTEX)
+                lock!!.lockTypes.add(SynchronizeLock.LockType.MUTEX)
                 // TODO, this should not occur, but need to notify somehow
                 localPrintln("Double synchronized for $method!?")
             } else {
