@@ -4,7 +4,9 @@ junit = "4.13.2"
 
 # plugins
 changelog = "2.2.1"
-intelliJPlatform = "2.4.0"
+intelliJPlatform = "2.6.0"
+intellijModulesJavaVersion = "21.0.0"
+intellijJavaVersion = "21.0.0"
 kotlin = "2.1.20"
 kover = "0.9.1"
 qodana = "2024.3.4"
@@ -18,3 +20,6 @@ intelliJPlatform = { id = "org.jetbrains.intellij.platform", version.ref = "inte
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }
+
+intellijModulesJava = { id = "com.intellij.modules.java", version.ref = "intellijModulesJavaVersion" }
+intellijJava = { id = "com.intellij.java", version.ref = "intellijJavaVersion" }

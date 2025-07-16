@@ -1,4 +1,4 @@
-package com.github.tthijsv.javadeadlockplugin.toolWindow
+package com.maven.plugin.deadlock.toolWindow
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -8,8 +8,8 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
-import com.github.tthijsv.javadeadlockplugin.MyBundle
-import com.github.tthijsv.javadeadlockplugin.services.MyProjectService
+import com.maven.plugin.deadlock.MyBundle
+import com.maven.plugin.deadlock.services.MyProjectService
 import javax.swing.JButton
 
 

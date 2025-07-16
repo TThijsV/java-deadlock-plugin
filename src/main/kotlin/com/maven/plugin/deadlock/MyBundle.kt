@@ -1,4 +1,4 @@
-package com.github.tthijsv.javadeadlockplugin
+package com.maven.plugin.deadlock
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls
