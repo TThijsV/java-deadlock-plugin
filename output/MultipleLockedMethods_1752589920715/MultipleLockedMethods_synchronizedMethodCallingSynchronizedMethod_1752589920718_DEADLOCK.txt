@@ -1,0 +1,8 @@
+Results starting from method PsiMethod:synchronizedMethodCallingSynchronizedMethod, has a deadlock risk of LOW
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|RISK| LR |SYNC|WS|EXT|LOOP|DEPTH|   SCOPE                                                                                            |LOCK                                              |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|LOW |    |SYNC|WS|   |    |    1| MultipleLockedMethods#synchronizedMethodCallingSynchronizedMethod                                  |MultipleLockedMethods INSTANCE                    |
+|    1|LOW |    |SYNC|WS|   |    |    2|   MultipleLockedMethods#emptySynchronizedMethod                                                    |MultipleLockedMethods INSTANCE                    |
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

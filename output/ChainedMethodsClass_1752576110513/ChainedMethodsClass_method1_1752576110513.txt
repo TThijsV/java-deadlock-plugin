@@ -1,0 +1,13 @@
+Results starting from method PsiMethod:method1, contains very likely deadlocks = false, contains deadlock risks = false
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |   |    |  |   |    |    1|                                                  | ChainedMethodsClass#method1                                                                        |
+|    1|  |   |    |  |   |    |    2|                                                  |   ChainedMethodsClass#methodA                                                                      |
+|    2|  |   |    |  |   |    |    2|                                                  |   ChainedMethodsClass#methodB                                                                      |
+|    3|  |   |    |  |   |    |    3|                                                  |     ChainedMethodsClass#methodD                                                                    |
+|    4|  |   |    |  |   |    |    4|                                                  |       ChainedMethodsClass#methodF                                                                  |
+|    5|  |   |    |  |   |    |    3|                                                  |     ChainedMethodsClass#methodE                                                                    |
+|    6|  |   |    |  |   |    |    2|                                                  |   ChainedMethodsClass#methodC                                                                      |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

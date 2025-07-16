@@ -1,0 +1,21 @@
+Results starting from method PsiMethod:methodA, has a deadlock risk of HIGH
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|HIGH|    |  |   |    |    1|                                                  | ExtensiveTestClass#methodA                                                                         |
+|    1|LOW |    |  |   |    |    2|                                                  |   ExtensiveTestClass#methodB1                                                                      |
+|    2|LOW |SYNC|WS|   |    |    3|ExtensiveTestClass INSTANCE                       |     ExtensiveTestClass#methodC1                                                                    |
+|    4|LOW |SYNC|WS|   |    |    4|ExtensiveTestClass INSTANCE                       |       SYNC_BLOCK#ExtensiveTestClass#methodC1                                                       |
+|   14|MID |    |  |   |    |    2|                                                  |   ExtensiveTestClass#methodB4                                                                      |
+|   15|MID |SYNC|WS|   |    |    3|ExtensiveTestClass INSTANCE                       |     ExtensiveTestClass#methodC4                                                                    |
+|   17|MID |SYNC|WS|   |    |    4|Object INSTANCE                                   |       SYNC_BLOCK#ExtensiveTestClass#methodC4                                                       |
+|   19|HIGH|SYNC|WS|   |    |    2|ExtensiveTestClass INSTANCE                       |   ExtensiveTestClass#methodB5                                                                      |
+|   20|HIGH|    |WS|   |    |    3|                                                  |     ExtensiveTestClass#methodC5                                                                    |
+|   21|HIGH|SYNC|WS|   |    |    4|Object INSTANCE                                   |       SYNC_BLOCK#ExtensiveTestClass#methodC5                                                       |
+|   22|HIGH|SYNC|WS|   |    |    5|ExtensiveTestClass INSTANCE                       |         ExtensiveTestClass#methodD5                                                                |
+|   23|HIGH|    |WS|   |    |    2|                                                  |   ExtensiveTestClass#methodB6                                                                      |
+|   24|HIGH|SYNC|WS|   |    |    3|ExtensiveTestClass INSTANCE                       |     ExtensiveTestClass#methodC6                                                                    |
+|   25|HIGH|SYNC|WS|   |    |    4|ExtensiveTestClass.class                          |       ExtensiveTestClass#methodD6                                                                  |
+|   26|HIGH|    |WS|   |LOOP|    5|                                                  |         ExtensiveTestClass#methodB6                                                                |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

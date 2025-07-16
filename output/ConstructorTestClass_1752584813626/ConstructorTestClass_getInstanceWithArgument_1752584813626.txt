@@ -1,0 +1,12 @@
+Results starting from method PsiMethod:getInstanceWithArgument, has a deadlock risk of 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|    |    |  |   |    |    1|                                                  | ConstructorTestClass#getInstanceWithArgument                                                       |
+|    1|    |    |  |   |    |    2|                                                  |   new ConstructorTestClass()                                                                       |
+|    2|    |    |  |   |    |    3|                                                  |     ConstructorTestClass#ConstructorTestClass                                                      |
+|    3|    |    |  |   |    |    4|                                                  |       ConstructorTestClass#methodB                                                                 |
+|    4|    |    |  |   |    |    5|                                                  |         ConstructorTestClass#methodC                                                               |
+|    5|    |    |  |   |    |    3|                                                  |     ConstructorTestClass#methodA                                                                   |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

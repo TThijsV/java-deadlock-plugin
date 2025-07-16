@@ -1,0 +1,11 @@
+Results starting from method PsiMethod:methodWithConstructorWithChainedMethodAndConstructorArgument, contains very likely deadlocks = false, contains deadlock risks = false
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |   ||    |  |   |    |    1|                                                  | ChainedMethodsClass#methodWithConstructorWithChainedMethodAndConstructorArgument                   |
+|    1|  |   ||    |  |   |    |    2|                                                  |   ChainedMethodsClass#methodWithArgument                                                           |
+|    2|  |   ||    |  |   |    |    3|                                                  |     ChainedMethodsClass#methodE                                                                    |
+|    3|  |   ||    |  |   |    |    2|                                                  |   new ChainedMethodsClass()                                                                        |
+|    4|  |   ||    |  |   |    |    2|                                                  |   new ChainedMethodsClass()                                                                        |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

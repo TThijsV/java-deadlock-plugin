@@ -1,0 +1,6 @@
+Results starting from method PsiMethod:synchronizedScopeOnObjectMethod, contains very likely deadlocks = false, contains deadlock risks = false
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |   |    |  |   |    |    1|                                                  | SynchronizedMethodsClass#synchronizedScopeOnObjectMethod                                           |

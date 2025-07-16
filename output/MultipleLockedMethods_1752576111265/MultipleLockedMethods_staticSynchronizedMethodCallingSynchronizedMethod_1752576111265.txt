@@ -1,0 +1,8 @@
+Results starting from method PsiMethod:staticSynchronizedMethodCallingSynchronizedMethod, contains very likely deadlocks = false, contains deadlock risks = true
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |DLR|SYNC|WS|   |    |    1|MultipleLockedMethods.class                       | MultipleLockedMethods#staticSynchronizedMethodCallingSynchronizedMethod                            |
+|    1|  |DLR|SYNC|WS|   |    |    2|MultipleLockedMethods INSTANCE                    |   MultipleLockedMethods#emptySynchronizedMethod                                                    |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

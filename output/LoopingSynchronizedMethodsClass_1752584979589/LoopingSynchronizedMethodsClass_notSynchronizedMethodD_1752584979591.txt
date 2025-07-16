@@ -1,0 +1,11 @@
+Results starting from method PsiMethod:notSynchronizedMethodD, has a deadlock risk of 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|    |    |WS|   |    |    1|                                                  | LoopingSynchronizedMethodsClass#notSynchronizedMethodD                                             |
+|    1|    |    |  |   |    |    2|                                                  |   LoopingSynchronizedMethodsClass#synchronizedScopedMethodE                                        |
+|    2|    |SYNC|WS|   |    |    3|LoopingSynchronizedMethodsClass INSTANCE          |     SYNC_BLOCK#LoopingSynchronizedMethodsClass#synchronizedScopedMethodE                           |
+|    3|    |    |WS|   |    |    4|                                                  |       LoopingSynchronizedMethodsClass#notSynchronizedMethodF                                       |
+|    4|    |    |WS|   |LOOP|    5|                                                  |         LoopingSynchronizedMethodsClass#notSynchronizedMethodD                                     |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

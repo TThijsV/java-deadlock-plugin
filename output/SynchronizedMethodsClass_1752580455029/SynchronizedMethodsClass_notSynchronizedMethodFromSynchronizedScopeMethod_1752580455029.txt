@@ -1,0 +1,9 @@
+Results starting from method PsiMethod:notSynchronizedMethodFromSynchronizedScopeMethod, has a deadlock risk of 0
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |   ||    |  |   |    |    1|                                                  | SynchronizedMethodsClass#notSynchronizedMethodFromSynchronizedScopeMethod                          |
+|    1|  |   ||SYNC|WS|   |    |    2|SynchronizedMethodsClass INSTANCE                 |   SYNC_BLOCK#SynchronizedMethodsClass#notSynchronizedMethodFromSynchronizedScopeMethod             |
+|    2|  |   ||    |WS|   |    |    3|                                                  |     SynchronizedMethodsClass#nonSynchronizedMethod                                                 |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+Results starting from method PsiMethod:staticSynchronizedMethodCallingStaticSynchronizedMethod, has a deadlock risk of 0
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|COUNT|DL|DLR|RISK|SYNC|WS|EXT|LOOP|DEPTH|LOCK                                              |   SCOPE                                                                                            |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    0|  |   ||SYNC|WS|   |    |    1|MultipleLockedMethods.class                       | MultipleLockedMethods#staticSynchronizedMethodCallingStaticSynchronizedMethod                      |
+|    1|  |   ||SYNC|WS|   |    |    2|MultipleLockedMethods.class                       |   MultipleLockedMethods#emptyStaticSynchronizedMethod                                              |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
